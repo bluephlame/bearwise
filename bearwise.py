@@ -90,7 +90,12 @@ if __name__ == '__main__':
         data = json.load(file)
 
     global token
-    token = data['token']
+
+    if 'token' in data and len(data['token']) > 0:
+        token = data['token']
+    else:
+        print('You need to add your read wise token to config.json and it must be in the same folder as the executable')
+        sys.exit("Fix the config file")
 
     if 'last_fetch_date' in data:
         print('Processing readwise Highlights since {}'.format(data['last_fetch_date']))

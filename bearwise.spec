@@ -44,4 +44,4 @@ exe = EXE(
 )
 
 import shutil
-shutil.copyfile('config.json', '{0}/config.json'.format(DISTPATH))
+shutil.copyfile('config.json.tmp', '{0}/config.json'.format(DISTPATH))
