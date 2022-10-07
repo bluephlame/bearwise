@@ -1,7 +1,6 @@
-# This is a sample Python script.
+import os
+import sys
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 import xcall
 import datetime
 import requests
@@ -40,7 +39,8 @@ def open_book_note(book: object):
     try:
         result = xcall.xcall('bear', 'open-note',
                 {'title': book['readable_title'],
-                 'header': "ID:{}".format(book['user_book_id'])
+                 'header': "ID:{}".format(book['user_book_id']),
+                 'exclude_trashed': 'yes'
                  })
         return result['identifier']
     except xcall.XCallbackError:
@@ -72,20 +72,34 @@ def append_highlight(highlight: object, note_id: str):
     return result
 
 
-# Later, if you want to get new highlights updated since your last fetch of allData, do this.
-# last_fetch_was_at = datetime.datetime.now() - datetime.timedelta(days=1)  # use your own stored date
-# new_data = fetch_from_export_api(last_fetch_was_at.isoformat())
+def resolve_path(path):
+    if getattr(sys, "frozen", False):
+        # If the 'frozen' flag is set, we are in bundled-app mode!
+        resolved_path = os.path.abspath(os.path.join(os.path.dirname(sys.executable),path))
 
-# Press the green button in the gutter to run the script.
+        # resolved_path = os.path.abspath(os.path.join(sys._MEIPASS, path))
+    else:
+        # Normal development mode. Use os.getcwd() or __file__ as appropriate in your case...
+        resolved_path = os.path.abspath(os.path.join(os.getcwd(), path))
+
+    return resolved_path
+
+
 if __name__ == '__main__':
-    with open('config.json') as file:
+    with open(resolve_path('config.json')) as file:
         data = json.load(file)
 
-    print('Processing readwise Highlights since {}'.format(data['last_fetch_date']))
     global token
     token = data['token']
 
-    all_data = fetch_from_export_api(data['last_fetch_date'])
+    if 'last_fetch_date' in data:
+        print('Processing readwise Highlights since {}'.format(data['last_fetch_date']))
+        all_data = fetch_from_export_api(data['last_fetch_date'])
+    else:
+
+        print('Processing readwise Highlights since epoc')
+        all_data = fetch_from_export_api()
+
     print('There are {} new highlights'.format(len(all_data)))
     for book in all_data:
         note_id = open_book_note(book)
@@ -94,6 +108,6 @@ if __name__ == '__main__':
         for highlight in book['highlights']:
             append_highlight(highlight, note_id)
     data['last_fetch_date'] = datetime.now().isoformat()
-    with open('config.json', 'w') as outfile:
+    with open(resolve_path('config.json'), 'w') as outfile:
         json.dump(data, outfile)
 
